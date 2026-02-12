@@ -175,9 +175,12 @@ class DBBrowser:
         self.columns = []
         self.rounded_buttons = []
         self._icon_cache = {}
+        self._egg_overlay = None
+        self._egg_after_id = None
         self._settings_path = self._get_settings_path()
         self._set_window_icon()
         self.create_ui()
+        self._bind_shortcuts()
         self.apply_theme()
         self.root.after(0, self._try_open_last_sqlite)
 
@@ -1244,6 +1247,34 @@ class DBBrowser:
                 self.root.iconphoto(True, icon)
             except tk.TclError:
                 pass
+
+    def _bind_shortcuts(self):
+        self.root.bind_all("<Control-Alt-j>", self._on_easter_egg_shortcut)
+        self.root.bind_all("<Control-Alt-J>", self._on_easter_egg_shortcut)
+
+    def _on_easter_egg_shortcut(self, _event=None):
+        egg_image = self._load_icon("egg")
+        if egg_image is None:
+            return "break"
+
+        if self._egg_after_id:
+            self.root.after_cancel(self._egg_after_id)
+            self._egg_after_id = None
+        if self._egg_overlay and self._egg_overlay.winfo_exists():
+            self._egg_overlay.destroy()
+
+        self._egg_overlay = tk.Label(self.root, image=egg_image, bd=0, highlightthickness=0)
+        self._egg_overlay.image = egg_image
+        self._egg_overlay.place(relx=0.5, rely=0.5, anchor="center")
+        self._egg_overlay.lift()
+        self._egg_after_id = self.root.after(100, self._hide_easter_egg)
+        return "break"
+
+    def _hide_easter_egg(self):
+        self._egg_after_id = None
+        if self._egg_overlay and self._egg_overlay.winfo_exists():
+            self._egg_overlay.destroy()
+        self._egg_overlay = None
 
     def _show_error(self, title, message, parent=None):
         messagebox.showerror(title, message, parent=parent or self.root)

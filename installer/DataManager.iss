@@ -1,6 +1,6 @@
 [Setup]
 AppName=DataManager
-AppVersion=1.0.0
+AppVersion=1.0.1
 AppPublisher=Jayks né vida
 AppPublisherURL=https://github.com/jayks777
 AppSupportURL=https://github.com/jayks777/DataManager
