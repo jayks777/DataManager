@@ -1,0 +1,21 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+
+# Build artifacts
+build/
+dist/
+
+# Installer output
+installer/output/
+installer/installer/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
