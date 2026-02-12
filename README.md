@@ -8,6 +8,8 @@ Projeto pensado para uso didatico em sala, com interface visual para:
 - inserir/editar/excluir registros
 - navegar rapidamente pelos dados
 
+## [Downloads Aqui!](/DOWNLOAD.md)
+
 ## Publico-alvo
 
 Estudantes iniciando com banco de dados relacional e SQLite.

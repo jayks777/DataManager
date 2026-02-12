@@ -131,6 +131,10 @@ class RoundedButton(tk.Canvas):
         self.configure(bg=colors.get("surface", self._resolve_bg(self.master)))
         self._draw()
 
+    def set_text(self, text):
+        self._text = text
+        self._draw()
+
     def _on_enter(self, _event):
         if self._state != "disabled":
             self.itemconfig(self._rect_id, fill=self._colors.get("hover", "#1b3f5c"))
@@ -165,12 +169,91 @@ class DBBrowser:
         ("On Update", 110),
         ("", 80),
     ]
+    I18N = {
+        "pt": {
+            "app_title": "DataManager",
+            "app_subtitle": "SQLite Browser",
+            "btn_create_db": "Criar DB",
+            "btn_open_sqlite": "Abrir SQLite",
+            "btn_create_table": "Criar Tabela",
+            "btn_drop_table": "Excluir Tabela",
+            "btn_insert": "Inserir",
+            "btn_edit": "Editar",
+            "btn_delete": "Excluir",
+            "db_none_open": "Nenhum banco aberto",
+            "sidebar_tables": "Tabelas",
+            "footer_credit": "By Jayks <3",
+            "menu_options": "Opcoes",
+            "menu_file": "Arquivo",
+            "menu_theme": "Tema",
+            "menu_language": "Idioma",
+            "menu_create_db": "Criar DB",
+            "menu_open_db": "Abrir DB",
+            "theme_dark": "Escuro",
+            "theme_divas": "For Divas",
+            "lang_pt": "Portugues",
+            "lang_en": "English",
+            "lang_kg": "Kaingang",
+        },
+        "en": {
+            "app_title": "DataManager",
+            "app_subtitle": "SQLite Browser",
+            "btn_create_db": "Create DB",
+            "btn_open_sqlite": "Open SQLite",
+            "btn_create_table": "Create Table",
+            "btn_drop_table": "Drop Table",
+            "btn_insert": "Insert",
+            "btn_edit": "Edit",
+            "btn_delete": "Delete",
+            "db_none_open": "No database open",
+            "sidebar_tables": "Tables",
+            "footer_credit": "By Jayks <3",
+            "menu_options": "Options",
+            "menu_file": "File",
+            "menu_theme": "Theme",
+            "menu_language": "Language",
+            "menu_create_db": "Create DB",
+            "menu_open_db": "Open DB",
+            "theme_dark": "Dark",
+            "theme_divas": "For Divas",
+            "lang_pt": "Portuguese",
+            "lang_en": "English",
+            "lang_kg": "Kaingang",
+        },
+        "kg": {
+            "app_title": "DataManager",
+            "app_subtitle": "Abedenego`s version",
+            "btn_create_db": "Criar DB",
+            "btn_open_sqlite": "Abrir SQLite",
+            "btn_create_table": "Criar Tabela",
+            "btn_drop_table": "Excluir Tabela",
+            "btn_insert": "Inserir",
+            "btn_edit": "Editar",
+            "btn_delete": "Excluir",
+            "db_none_open": "Nenhum banco aberto",
+            "sidebar_tables": "Tabelas",
+            "footer_credit": "By Jayks <3",
+            "menu_options": "Opcoes",
+            "menu_file": "Arquivo",
+            "menu_theme": "Tema",
+            "menu_language": "Idioma",
+            "menu_create_db": "Criar DB",
+            "menu_open_db": "Abrir DB",
+            "theme_dark": "Escuro",
+            "theme_divas": "For Divas",
+            "lang_pt": "Portugues",
+            "lang_en": "English",
+            "lang_kg": "Kaingang",
+        },
+    }
+    SUPPORTED_LANGUAGES = ("pt", "en", "kg")
 
     def __init__(self, root):
         self.root = root
         self.root.title("DataManager")
         self.root.geometry("1180x700")
         self.root.minsize(980, 620)
+        self.theme_options = ("dark", "for_divas")
         self.current_table = None
         self.columns = []
         self.rounded_buttons = []
@@ -178,6 +261,10 @@ class DBBrowser:
         self._egg_overlay = None
         self._egg_after_id = None
         self._settings_path = self._get_settings_path()
+        self._load_theme_preference()
+        self._load_language_preference()
+        self.theme_var = tk.StringVar(value=theme.current)
+        self.language_var = tk.StringVar(value=self.language)
         self._set_window_icon()
         self.create_ui()
         self._bind_shortcuts()
@@ -194,6 +281,7 @@ class DBBrowser:
         self.create_topbar()
         self.create_body()
         self.create_footer()
+        self._apply_ui_texts()
 
     def create_topbar(self):
         self.topbar = ttk.Frame(self.main, style="Topbar.TFrame")
@@ -208,39 +296,31 @@ class DBBrowser:
 
         self.subtitle_label = ttk.Label(
             self.topbar,
-            text="SQLite Browser",
+            text="",
             style="Subtitle.TLabel",
         )
         self.subtitle_label.pack(side="left", pady=10)
 
+        self.file_menu_button = ttk.Menubutton(
+            self.topbar,
+            text="",
+            style="Topbar.TMenubutton",
+        )
+        self.file_menu_button.pack(side="left", padx=(12, 4), pady=8)
+
+        self.options_menu_button = ttk.Menubutton(
+            self.topbar,
+            text="",
+            style="Topbar.TMenubutton",
+        )
+        self.options_menu_button.pack(side="left", padx=(4, 8), pady=8)
+
         self.actions = ttk.Frame(self.topbar, style="Topbar.TFrame")
         self.actions.pack(side="right", padx=12, pady=8)
 
-        self.create_button = RoundedButton(
-            self.actions,
-            text="Criar DB",
-            command=self.create_sqlite,
-            icon_image=self._load_icon("database"),
-            icon_text="◼",
-            radius=14,
-        )
-        self.create_button.pack(side="left", padx=6)
-        self.rounded_buttons.append(self.create_button)
-
-        self.open_button = RoundedButton(
-            self.actions,
-            text="Abrir SQLite",
-            command=self.open_sqlite,
-            icon_image=self._load_icon("open"),
-            icon_text="▣",
-            radius=14,
-        )
-        self.open_button.pack(side="left", padx=6)
-        self.rounded_buttons.append(self.open_button)
-
         self.table_button = RoundedButton(
             self.actions,
-            text="Criar Tabela",
+            text="",
             command=self.create_table,
             icon_image=self._load_icon("table_add"),
             icon_text="▤",
@@ -251,7 +331,7 @@ class DBBrowser:
 
         self.drop_button = RoundedButton(
             self.actions,
-            text="Excluir Tabela",
+            text="",
             command=self.drop_table,
             icon_image=self._load_icon("table_remove"),
             icon_text="▧",
@@ -262,10 +342,11 @@ class DBBrowser:
 
         self.db_label = ttk.Label(
             self.topbar,
-            text="Nenhum banco aberto",
+            text="",
             style="Topbar.TLabel",
         )
         self.db_label.pack(side="right", padx=12)
+        self._create_menu()
 
     def create_body(self):
         body = ttk.Frame(self.main)
@@ -278,7 +359,7 @@ class DBBrowser:
         self.footer.pack(fill="x")
         self.credit_label = ttk.Label(
             self.footer,
-            text="By Jayks ♥",
+            text="",
             style="Topbar.TLabel",
         )
         self.credit_label.pack(side="right", padx=12, pady=(0, 8))
@@ -289,7 +370,7 @@ class DBBrowser:
 
         self.sidebar_label = ttk.Label(
             self.sidebar,
-            text="Tabelas",
+            text="",
             style="Sidebar.TLabel",
         )
         self.sidebar_label.pack(anchor="w", padx=12, pady=(12, 6))
@@ -307,7 +388,7 @@ class DBBrowser:
 
         self.insert_button = RoundedButton(
             self.toolbar,
-            text="Inserir",
+            text="",
             command=self.insert_row,
             icon_image=self._load_icon("row_add"),
             icon_text="+",
@@ -318,7 +399,7 @@ class DBBrowser:
 
         self.edit_button = RoundedButton(
             self.toolbar,
-            text="Editar",
+            text="",
             command=self.edit_row,
             icon_image=self._load_icon("edit"),
             icon_text="✎",
@@ -329,7 +410,7 @@ class DBBrowser:
 
         self.delete_button = RoundedButton(
             self.toolbar,
-            text="Excluir",
+            text="",
             command=self.delete_row,
             icon_image=self._load_icon("trash"),
             icon_text="×",
@@ -375,6 +456,32 @@ class DBBrowser:
         settings = self._load_settings()
         settings["last_db_path"] = path
         self._save_settings(settings)
+
+    def _save_theme_preference(self):
+        settings = self._load_settings()
+        settings["theme"] = theme.current
+        self._save_settings(settings)
+
+    def _save_language_preference(self):
+        settings = self._load_settings()
+        settings["language"] = self.language
+        self._save_settings(settings)
+
+    def _load_theme_preference(self):
+        settings = self._load_settings()
+        saved_theme = settings.get("theme")
+        if saved_theme in theme.COLORS:
+            theme.current = saved_theme
+        else:
+            theme.current = "dark"
+
+    def _load_language_preference(self):
+        settings = self._load_settings()
+        saved_language = settings.get("language")
+        if saved_language in self.SUPPORTED_LANGUAGES:
+            self.language = saved_language
+        else:
+            self.language = "pt"
 
     def _clear_last_db_path(self):
         settings = self._load_settings()
@@ -938,6 +1045,21 @@ class DBBrowser:
             font=("Segoe UI", 10),
         )
         style.configure(
+            "Topbar.TMenubutton",
+            background=colors["panel"],
+            foreground=colors["fg"],
+            borderwidth=1,
+            relief="flat",
+            focusthickness=0,
+            padding=(10, 4),
+            arrowcolor=colors["fg"],
+        )
+        style.map(
+            "Topbar.TMenubutton",
+            background=[("active", colors["accent_dark"])],
+            foreground=[("active", colors["fg"])],
+        )
+        style.configure(
             "Sidebar.TLabel",
             background=colors["panel"],
             foreground=colors["muted"],
@@ -1020,6 +1142,7 @@ class DBBrowser:
 
         for button in self.rounded_buttons:
             self._apply_rounded_button_theme(button, colors, secondary=False)
+        self._apply_menu_theme()
 
     def _apply_rounded_button_theme(self, button, colors, secondary=False):
         if secondary:
@@ -1252,6 +1375,93 @@ class DBBrowser:
         self.root.bind_all("<Control-Alt-j>", self._on_easter_egg_shortcut)
         self.root.bind_all("<Control-Alt-J>", self._on_easter_egg_shortcut)
 
+    def _t(self, key):
+        bundle = self.I18N.get(self.language, self.I18N["pt"])
+        return bundle.get(key, key)
+
+    def _create_menu(self):
+        self.file_menu = tk.Menu(self.root, tearoff=0)
+        self.options_menu = tk.Menu(self.root, tearoff=0)
+        self.theme_menu = tk.Menu(self.options_menu, tearoff=0)
+        self.language_menu = tk.Menu(self.options_menu, tearoff=0)
+
+        self.file_menu.add_command(label=self._t("menu_create_db"), command=self.create_sqlite)
+        self.file_menu.add_command(label=self._t("menu_open_db"), command=self.open_sqlite)
+
+        self.theme_menu.add_radiobutton(
+            label=self._t("theme_dark"),
+            variable=self.theme_var,
+            value="dark",
+            command=self._on_theme_selected,
+        )
+        self.theme_menu.add_radiobutton(
+            label=self._t("theme_divas"),
+            variable=self.theme_var,
+            value="for_divas",
+            command=self._on_theme_selected,
+        )
+
+        self.language_menu.add_radiobutton(
+            label=self._t("lang_pt"),
+            variable=self.language_var,
+            value="pt",
+            command=self._on_language_selected,
+        )
+        self.language_menu.add_radiobutton(
+            label=self._t("lang_en"),
+            variable=self.language_var,
+            value="en",
+            command=self._on_language_selected,
+        )
+        self.language_menu.add_radiobutton(
+            label=self._t("lang_kg"),
+            variable=self.language_var,
+            value="kg",
+            command=self._on_language_selected,
+        )
+
+        self.options_menu.add_cascade(label=self._t("menu_theme"), menu=self.theme_menu)
+        self.options_menu.add_cascade(label=self._t("menu_language"), menu=self.language_menu)
+        self.file_menu_button.config(text=self._t("menu_file"), menu=self.file_menu)
+        self.options_menu_button.config(text=self._t("menu_options"), menu=self.options_menu)
+        self._apply_menu_theme()
+
+    def _apply_ui_texts(self):
+        self.root.title(self._t("app_title"))
+        self.title_label.config(text=self._t("app_title"))
+        self.subtitle_label.config(text=self._t("app_subtitle"))
+
+        self.table_button.set_text(self._t("btn_create_table"))
+        self.drop_button.set_text(self._t("btn_drop_table"))
+
+        self.insert_button.set_text(self._t("btn_insert"))
+        self.edit_button.set_text(self._t("btn_edit"))
+        self.delete_button.set_text(self._t("btn_delete"))
+
+        if not db_manager.current:
+            self.db_label.config(text=self._t("db_none_open"))
+        self.sidebar_label.config(text=self._t("sidebar_tables"))
+        self.credit_label.config(text=self._t("footer_credit"))
+
+    def _on_theme_selected(self, _event=None):
+        selected_theme = self.theme_var.get()
+        if selected_theme not in theme.COLORS:
+            return
+        theme.current = selected_theme
+        self._save_theme_preference()
+        self.apply_theme()
+
+    def _on_language_selected(self):
+        selected_language = self.language_var.get()
+        if selected_language not in self.SUPPORTED_LANGUAGES:
+            return
+        self.language = selected_language
+        self._save_language_preference()
+        self._create_menu()
+        self._apply_ui_texts()
+        if selected_language == "kg":
+            self._show_info("Modo Kaingang", "Traducao experimental para zoeira.")
+
     def _on_easter_egg_shortcut(self, _event=None):
         egg_image = self._load_icon("egg")
         if egg_image is None:
@@ -1284,3 +1494,18 @@ class DBBrowser:
 
     def _show_info(self, title, message, parent=None):
         messagebox.showinfo(title, message, parent=parent or self.root)
+
+    def _apply_menu_theme(self):
+        if not hasattr(self, "file_menu"):
+            return
+        colors = theme.COLORS[theme.current]
+        common = {
+            "bg": colors["panel"],
+            "fg": colors["fg"],
+            "activebackground": colors["accent_dark"],
+            "activeforeground": colors["fg"],
+        }
+        self.file_menu.config(**common)
+        self.options_menu.config(**common)
+        self.theme_menu.config(**common)
+        self.language_menu.config(**common)
